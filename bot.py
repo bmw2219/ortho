@@ -97,7 +97,7 @@ async def online(ctx):
 
         return 0
 
-with open("registered_players.txt", "r") as player_file:
+with open("bot_key.txt", "r") as player_file:
     key = player_file.read().split()
 
 client.run(key[0])

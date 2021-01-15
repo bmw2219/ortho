@@ -45,4 +45,3 @@ def doUUID(uuid):
     if data[1]:
         output.append([data[0], data[2]])
 
-print(get_player("56977856afa34a3e8e645c1a6ba1ccae"))
