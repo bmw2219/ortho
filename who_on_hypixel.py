@@ -11,6 +11,7 @@ with open("hypixel_api_key.txt", "r") as player_file:
 api_key = contents[0]
 
 output = []
+player_stats = {}
 
 def get_player(player):
     data = requests.get(f"https://api.hypixel.net/player?key={api_key}&name={player}").json()["player"]
@@ -56,8 +57,102 @@ def returnName(uuid):
     ign = requests.get(f"https://api.mojang.com/user/profiles/{uuid}/names").json()[-1]["name"]
     return ign
 
+def getUUIDStats(uuid):
+    global player_stats
+    ign = returnName(uuid)
+    data = requests.get(f"https://api.hypixel.net/player?key={api_key}&name={ign}").json()["player"]
+    bw_data = data["stats"]["Bedwars"]
+    op = {
+        "level": data["achievements"]["bedwars_level"],
+        "wins": bw_data["wins_bedwars"],
+        "losses": bw_data["losses_bedwars"],
+        "final_kills": bw_data["final_kills_bedwars"],
+        "final_deaths": bw_data["final_deaths_bedwars"],
+        "kills": bw_data["kills_bedwars"],
+        "deaths": bw_data["deaths_bedwars"],
+        "beds_broken": bw_data["beds_broken_bedwars"],
+        "beds_lost": bw_data["beds_lost_bedwars"]
+    }
+    player_stats[ign] = op
+
+def getIGNBwStats(ign):
+    data = requests.get(f"https://api.hypixel.net/player?key={api_key}&name={ign}").json()["player"]
+    bw_data = data["stats"]["Bedwars"]
+    op = {
+        "level": data["achievements"]["bedwars_level"],
+        "wins": bw_data["wins_bedwars"],
+        "losses": bw_data["losses_bedwars"],
+        "final_kills": bw_data["final_kills_bedwars"],
+        "final_deaths": bw_data["final_deaths_bedwars"],
+        "kills": bw_data["kills_bedwars"],
+        "deaths": bw_data["deaths_bedwars"],
+        "beds_broken": bw_data["beds_broken_bedwars"],
+        "beds_lost": bw_data["beds_lost_bedwars"]
+    }
+    return op
+
+def getUUIDMMStats(uuid):
+    global player_stats
+    ign = returnName(uuid)
+    data = requests.get(f"https://api.hypixel.net/player?key={api_key}&name={ign}").json()["player"]
+    mm_data = data["stats"]["MurderMystery"]
+    op = {
+        "wins": mm_data["wins"],
+        "losses": mm_data["games"]-mm_data["wins"],
+        "kills": mm_data["kills"],
+        "deaths": mm_data["deaths"],
+        "gold_collected": mm_data["coins_pickedup"]
+    }
+    player_stats[ign] = op
+
+def getIGNMMStats(ign):
+    data = requests.get(f"https://api.hypixel.net/player?key={api_key}&name={ign}").json()["player"]
+    mm_data = data["stats"]["MurderMystery"]
+    op = {
+        "wins": mm_data["wins"],
+        "losses": mm_data["games"] - mm_data["wins"],
+        "kills": mm_data["kills"],
+        "deaths": mm_data["deaths"],
+        "gold_collected": mm_data["coins_pickedup"]
+    }
+    return op
+
+def getAllPlayerBwStats(contents):
+    global player_stats
+    player_stats = {}
+    threads = []
+
+    for uuid in contents:
+        threads.append(Thread(target=getUUIDStats, args=(uuid,)))
+
+    for thread in threads:
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    x = player_stats
+    return x
+
+def getAllPlayerMMStats(contents):
+    global player_stats
+    player_stats = {}
+    threads = []
+
+    for uuid in contents:
+        threads.append(Thread(target=getUUIDMMStats, args=(uuid,)))
+
+    for thread in threads:
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    x = player_stats
+    return x
+
 def saveAllStats():
-    date_ = datetime.datetime.now().strftime(format="%m-%d-%y")
+    date_ = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime(format="%m-%d-%y")
     try:
         os.mkdir(f"stat_files/allStats/{date_}")
     except FileExistsError:
@@ -78,7 +173,9 @@ def updatePlaytimes():
     try:
         with open(f"stat_files/playtimes/{date_}.json", "r") as file:
             ze_data = json.load(file)
+        newDay = False
     except FileNotFoundError:
+        newDay = True
         ze_data = {}
         for i in contents:
             ze_data[i] = 0
@@ -87,7 +184,7 @@ def updatePlaytimes():
         try:
             thing = get_player(returnName(uuid))
         except json.decoder.JSONDecodeError:
-            # print("that error happened")
+            print("that error happened")
             pass
 
 
@@ -96,7 +193,10 @@ def updatePlaytimes():
 
     with open(f"stat_files/playtimes/{date_}.json", "w") as file:
         json.dump(ze_data, file)
-        # print("dumped at "+datetime.datetime.now().strftime("%H:%M:%S"))
+        print("dumped at "+datetime.datetime.now().strftime("%H:%M:%S"))
+
+    if newDay:
+        saveAllStats()
 
 
 def getGrasSumoWins():

@@ -1,6 +1,6 @@
 from mcstatus import MinecraftServer
 
-server = MinecraftServer("2.tcp.ngrok.io", port=17877)
+server = MinecraftServer("2.tcp.ngrok.io", port=17875)
 
 def getOnline():
     status = server.status()
