@@ -3,6 +3,7 @@ import time
 import json
 import datetime
 import os
+import math
 from threading import Thread
 
 with open("hypixel_api_key.txt", "r") as player_file:
@@ -18,15 +19,43 @@ def get_player(player):
     lastLogin = data["lastLogin"]/1000
     lastLogoff = data['lastLogout']/1000
 
+
     if lastLogin - lastLogoff < 0:
         return ["Offline", ]
 
+    try:
+        game = data["mostRecentGameType"]
+    except KeyError:
+        game = "Main Lobby"
+
+    games_dict = {
+        "LEGACY": "Classic",
+        "PROTOTYPE": "Prototype",
+        "GINGERBREAD": "TKR",
+        "SKYWARS": "Skywars",
+        "VAMPIREZ": "VampireZ",
+        "BUILD_BATTLE": "Build Battle",
+        "MURDER_MYSTERY": "Murder Mystery",
+        "DUELS": "Duels",
+        "ARCADE": "Arcade",
+        "BEDWARS": "Bedwars"
+    }
+
+    if game in games_dict:
+        game = games_dict[game]
+
     secondsOnline = time.time()-lastLogin
 
-    if secondsOnline < 3600:
-        return ["Online", f"{round(secondsOnline/60)} minutes"]
-    else:
-        return ["Online", f"{round(secondsOnline/3600)} hours"]
+    # if secondsOnline < 3600:
+    #     return ["Online", f"{round(secondsOnline/60)} minutes"]
+    # else:
+    #     return ["Online", f"{round(secondsOnline/3600)} hours"]
+
+    hours = math.floor(secondsOnline/3600)
+    mins = math.floor((secondsOnline%3600)/60)
+    secs = math.floor(secondsOnline%60)
+
+    return [f"Online", game, f"{hours}h{mins}m{secs}s"]
 
 def check(contents):
     global output
@@ -50,7 +79,7 @@ def doUUID(uuid):
     ign = requests.get(f"https://api.mojang.com/user/profiles/{uuid}/names").json()[-1]["name"]
     status = get_player(ign)
     if status[0] == "Online":
-        output.append([ign, status[1]])
+        output.append([ign, status[1], status[2]])
 
 def returnName(uuid):
     ign = requests.get(f"https://api.mojang.com/user/profiles/{uuid}/names").json()[-1]["name"]
