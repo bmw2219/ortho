@@ -29,7 +29,11 @@ async def saveAllStats():
 @tasks.loop(minutes=1)
 async def doStuff():
     # schedule.run_pending()
-    hypixel.updatePlaytimes()
+    try:
+        hypixel.updatePlaytimes()
+    except KeyError:
+        print("had the key error")
+
 
 @client.command(pass_context=True)
 async def registered(ctx):
@@ -112,6 +116,84 @@ async def bedwarsleaderboard(ctx, equation):
             output+=f"{i+1}. {lb[i][0]} ({lb[i][1]})\n"
         output += "```"
         await ctx.send(output)
+
+@client.command(pass_context=True)
+async def dailybw(ctx):
+    args = ctx.message.content.split()
+    if len(args) > 2 and args[2].lower() == "yesterday":
+        date_string = (datetime.datetime.now() - datetime.timedelta(days=2)).strftime(format="%m-%d-%y")
+    else:
+        date_string = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime(format="%m-%d-%y")
+
+    if len(args) == 1:
+        await ctx.send("**Format:** !dailybw <player>\n\n**NOTE:** The target player must be registered with Ortho.\nDo !register <player> to register someone")
+        return
+
+    with open("registered_players.txt", "r") as player_file:
+        contents = player_file.read().split()
+
+    player = args[1]
+    if len(args) > 2 and args[2].lower() == "yesterday":
+        player_data = requests.get("https://api.mojang.com/users/profiles/minecraft/" + player)
+        if player_data.status_code != 200:
+            await ctx.send("error")
+            return 0
+        player_data = player_data.json()
+        uuid = player_data["id"]
+        with open(f"stat_files/allStats/{(datetime.datetime.now() - datetime.timedelta(days=1)).strftime(format='%m-%d-%y')}/{uuid}.json") as file:
+            current_data = json.load(file)
+    else:
+        current_data = hypixel.getPlayerData(args[1])
+
+    if current_data["player"] is None:
+        await ctx.send("Invalid Username")
+        return
+
+    current_data = current_data["player"]
+    uuid = current_data["uuid"]
+    player = current_data["displayname"]
+
+    if uuid not in contents:
+        await ctx.send("That player is not registered with Ortho.\n\nDo !register <player> to register a player.")
+        return
+
+    with open(f"stat_files/allStats/{date_string}/{uuid}.json") as file:
+        past_data = json.load(file)["player"]
+
+    levels = current_data['achievements']['bedwars_level'] - past_data['achievements']['bedwars_level']
+    wins = current_data['stats']['Bedwars']['wins_bedwars'] - past_data['stats']['Bedwars']['wins_bedwars']
+    losses = current_data['stats']['Bedwars']['losses_bedwars'] - past_data['stats']['Bedwars']['losses_bedwars']
+    final_kills = current_data['stats']['Bedwars']['final_kills_bedwars'] - past_data['stats']['Bedwars']['final_kills_bedwars']
+    final_deaths = current_data['stats']['Bedwars']['final_deaths_bedwars'] - past_data['stats']['Bedwars']['final_deaths_bedwars']
+    kills = current_data['stats']['Bedwars']['kills_bedwars'] - past_data['stats']['Bedwars']['kills_bedwars']
+    deaths = current_data['stats']['Bedwars']['deaths_bedwars'] - past_data['stats']['Bedwars']['deaths_bedwars']
+    beds_broken = current_data['stats']['Bedwars']['beds_broken_bedwars'] - past_data['stats']['Bedwars']['beds_broken_bedwars']
+    beds_lost = current_data['stats']['Bedwars']['beds_lost_bedwars'] - past_data['stats']['Bedwars']['beds_lost_bedwars']
+
+    output_txt = f"DAILY STATS ({date_string})\n" \
+                 f"```This is a TEMPORARY daily command (i swear it will look better later im lazy rn)\n-------------------------\n" \
+                 f"Player: {player}\n" \
+                 f"Levels Gained: {levels}\n" \
+                 f"Wins: {wins}\n" \
+                 f"Losses: {losses}\n" \
+                 f"Games Played: {wins+losses}\n" \
+                 f"WLR: {round(wins/losses, 2) if losses > 0 else wins}\n\n" \
+                 f"Final Kills: {final_kills}\n" \
+                 f"Final Deaths: {final_deaths}\n" \
+                 f"FKDR: {round(final_kills/final_deaths, 2) if final_deaths > 0 else final_kills}\n" \
+                 f"FK/G: {round(final_kills/(wins+losses), 2) if (wins+losses) > 0 else 0}\n\n" \
+                 f"Kills: {kills}\n" \
+                 f"Deaths: {deaths}\n" \
+                 f"KDR: {round(kills/deaths, 2) if deaths > 0 else kills}\n" \
+                 f"K/G: {round(kills/(wins+losses), 2) if (wins+losses) > 0 else 0}\n\n" \
+                 f"Beds Broken: {beds_broken}\n" \
+                 f"Beds Lost: {beds_lost}\n" \
+                 f"BBLR: {round(beds_broken/beds_lost, 2) if beds_lost > 0 else beds_broken}\n" \
+                 f"B/G: {round(beds_broken/(wins+losses), 2) if (wins+losses) > 0 else 0}```"
+
+    await ctx.send(output_txt)
+
+
 
 @client.command(pass_context=True, aliases=["mmlb"])
 async def mmleaderboard(ctx, equation):

@@ -45,7 +45,6 @@ def check(contents):
     x = output
     return x
 
-
 def doUUID(uuid):
     global output
     ign = requests.get(f"https://api.mojang.com/user/profiles/{uuid}/names").json()[-1]["name"]
@@ -198,7 +197,9 @@ def updatePlaytimes():
     if newDay:
         saveAllStats()
 
-
 def getGrasSumoWins():
     data = requests.get(f"https://api.hypixel.net/player?key={api_key}&name=Grassias").json()["player"]["stats"]["Duels"]["sumo_duel_wins"]
     return data
+
+def getPlayerData(player):
+    return requests.get(f"https://api.hypixel.net/player?key={api_key}&name={player}").json()
