@@ -38,7 +38,9 @@ def get_player(player):
         "MURDER_MYSTERY": "Murder Mystery",
         "DUELS": "Duels",
         "ARCADE": "Arcade",
-        "BEDWARS": "Bedwars"
+        "BEDWARS": "Bedwars",
+        "PIT": "The Pit",
+        "HOUSING": "Housing",
     }
 
     if game in games_dict:
@@ -55,7 +57,7 @@ def get_player(player):
     mins = math.floor((secondsOnline%3600)/60)
     secs = math.floor(secondsOnline%60)
 
-    return [f"Online", game, f"{hours}h{mins}m{secs}s"]
+    return [f"Online", game, f"{hours}h {mins}m {secs}s"]
 
 def check(contents):
     global output
