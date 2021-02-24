@@ -42,13 +42,12 @@ class TictactoeBoard:
     def checkForGame(self):
         b = self.board_string
         for i in ["x", "o"]:
-            if b.count("-")==0:
-                return [True, "Tie"]
-            elif b[:3] == i*3 or b[3:6] == i*3 or b[6:] == i*3:
+            if b[:3] == i*3 or b[3:6] == i*3 or b[6:] == i*3:
                 return [True, i]
             elif b[0]+b[3]+b[6] == i*3 or b[1]+b[4]+b[7] == i*3 or b[2]+b[5]+b[8] == i*3:
                 return [True, i]
             elif b[0]+b[4]+b[8] == i*3 or b[2]+b[4]+b[6] == i*3:
                 return [True, i]
-            else:
-                return [False,]
+            elif b.count("-") == 0:
+                return [True, "Tie"]
+        return [False,]

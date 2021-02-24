@@ -10,6 +10,7 @@ import json
 import random
 import interpreter
 import schedule
+import date_grabber as dates
 from tictactoe import *
 import leaderboards
 import img_grabber
@@ -32,7 +33,6 @@ async def doStuff():
     # schedule.run_pending()
 
     hypixel.updatePlaytimes()
-
 
 
 @client.command(pass_context=True)
@@ -120,10 +120,19 @@ async def bedwarsleaderboard(ctx, equation):
 @client.command(pass_context=True)
 async def dailybw(ctx):
     args = ctx.message.content.split()
-    if len(args) > 2 and args[2].lower() == "yesterday":
-        date_string = (datetime.datetime.now() - datetime.timedelta(days=2)).strftime(format="%m-%d-%y")
-    else:
+    date_string = f"{args[0]} {args[1]} "
+
+    if len(args) > 2 and dates.getDate(ctx.message.content.replace(date_string, "", 1))[0]:
+        date_string = (dates.getDate(ctx.message.content.replace(date_string, "", 1))[1] - datetime.timedelta(days=1)).strftime(format="%m-%d-%y")
+    elif ctx.message.content.replace(date_string[:-1], "", 1) == "":
         date_string = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime(format="%m-%d-%y")
+    elif dates.getDate(ctx.message.content.replace(date_string, "", 1))[0] is False:
+        await ctx.send("Invalid Date")
+        return
+    ds = f"{args[0]} {args[1]} "
+    final_date = datetime.datetime.now().strftime(format="%m/%d/%y") if ctx.message.content.replace(ds[:-1], "", 1) == "" or args[2] == "today" else dates.getDate(ctx.message.content.replace(ds, "", 1))[1].strftime(format="%m/%d/%y")
+
+
 
     if len(args) == 1:
         await ctx.send("**Format:** !dailybw <player>\n\n**NOTE:** The target player must be registered with Ortho.\nDo !register <player> to register someone")
@@ -133,15 +142,19 @@ async def dailybw(ctx):
         contents = player_file.read().split()
 
     player = args[1]
-    if len(args) > 2 and args[2].lower() == "yesterday":
+    if len(args) > 2 and \
+            dates.getDate(ctx.message.content.replace(f"{args[0]} {args[1]}", "", 1))[0] and \
+            dates.getDate(ctx.message.content.replace(f'{args[0]} {args[1]}', '', 1))[1].strftime(format='%m-%d-%y') != datetime.datetime.today().strftime(format='%m-%d-%y'):
+
         player_data = requests.get("https://api.mojang.com/users/profiles/minecraft/" + player)
         if player_data.status_code != 200:
             await ctx.send("error")
             return 0
         player_data = player_data.json()
         uuid = player_data["id"]
-        with open(f"stat_files/allStats/{(datetime.datetime.now() - datetime.timedelta(days=1)).strftime(format='%m-%d-%y')}/{uuid}.json") as file:
+        with open(f"stat_files/allStats/{dates.getDate(ctx.message.content.replace(f'{args[0]} {args[1]}', '', 1))[1].strftime(format='%m-%d-%y')}/{uuid}.json") as file:
             current_data = json.load(file)
+
     else:
         current_data = hypixel.getPlayerData(args[1])
 
@@ -170,8 +183,8 @@ async def dailybw(ctx):
     beds_broken = current_data['stats']['Bedwars']['beds_broken_bedwars'] - past_data['stats']['Bedwars']['beds_broken_bedwars']
     beds_lost = current_data['stats']['Bedwars']['beds_lost_bedwars'] - past_data['stats']['Bedwars']['beds_lost_bedwars']
 
-    output_txt = f"DAILY STATS ({date_string})\n" \
-                 f"```This is a TEMPORARY daily command (i swear it will look better later im lazy rn)\n-------------------------\n" \
+    output_txt = f"DAILY STATS (**{final_date}**)\n" \
+                 f"```---------------------------\n" \
                  f"Player: {player}\n" \
                  f"Levels Gained: {levels}\n" \
                  f"Wins: {wins}\n" \
@@ -194,7 +207,6 @@ async def dailybw(ctx):
     await ctx.send(output_txt)
 
 
-
 @client.command(pass_context=True, aliases=["mmlb"])
 async def mmleaderboard(ctx, equation):
     async with ctx.typing():
@@ -210,7 +222,6 @@ async def mmleaderboard(ctx, equation):
         await ctx.send(output)
 
 
-
 @client.command(pass_context=True)
 async def bwterms(ctx):
     await ctx.send("The available data for BW is: level, wins, losses, final_kills, final_deaths, kills, deaths, beds_broken, beds_lost")
@@ -219,6 +230,19 @@ async def bwterms(ctx):
 async def mmterms(ctx):
     await ctx.send("The available data for MM is: wins, losses, kills, deaths, gold_collected")
 
+
+@client.command(pass_context=True)
+async def calc(ctx):
+    args = ctx.message.content.split()
+    if len(args) == 1:
+        await ctx.send("**Correct Format**: !calc <equation>\n\n"
+                       "*This command is used to make/test basic PEMDAS calculations using Ortho's equation interpreter.*")
+
+    equation = ctx.message.content.replace("!calc ", "", 1)
+
+    answer = round(float(interpreter.interpret(values={}, equation=equation)), 4)
+
+    await ctx.send(f"```\n{equation}\nAnswer: {answer}\n```")
 
 
 @client.command(pass_context=True)
@@ -287,14 +311,6 @@ async def online(ctx):
 
         return 0
 
-'''@client.command(pass_context=True)
-async def makeTeky(ctx):
-    newName = ctx.message.content.replace("!makeTeky ", "")
-    if len(newName.strip())==0:
-        return
-    teky = ctx.guild.get_member(258048636653535234)
-    await teky.edit(nick=newName)
-    await ctx.send("Teky is now "+newName)'''
 
 def isRegistered(ign):
     with open("registered_players.txt", "r") as player_file:
@@ -348,7 +364,7 @@ async def playtime(ctx, player):
 
 game_boards = []
 reactions = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"]
-@client.command(pass_context=True)
+@client.command(pass_context=True, aliases=["ttt"],)
 async def tictactoe(ctx, user: discord.User):
     players = [ctx.author, user]
 
@@ -396,12 +412,13 @@ async def on_raw_reaction_add(payload):
                 return
 
             current_player_turn = board.players[board.turnIndex % 2]
+            current_symbol = symbols[board.turnIndex % 2]
 
 
 
             await board.board_message.clear_reaction(payload.emoji)
             await board.board_message.edit(content=new_board)
-            await board.text_message.edit(content=f"<@!{current_player_turn.id}> it is now your turn! Choose a square through the reaction. ({board.turnIndex})")
+            await board.text_message.edit(content=f"<@!{current_player_turn.id}> it is now your turn! You are {current_symbol} Choose a square through the reaction. ({board.turnIndex})")
             # for j in reactions_used:
             #     await games[i].add_reaction(j)
 

@@ -16,9 +16,12 @@ player_stats = {}
 
 def get_player(player):
     data = requests.get(f"https://api.hypixel.net/player?key={api_key}&name={player}").json()["player"]
-    lastLogin = data["lastLogin"]/1000
-    lastLogoff = data['lastLogout']/1000
 
+    try:
+        lastLogin = data["lastLogin"]/1000
+        lastLogoff = data['lastLogout']/1000
+    except TypeError:
+        return ["Offline",]
 
     if lastLogin - lastLogoff < 0:
         return ["Offline", ]
@@ -41,6 +44,7 @@ def get_player(player):
         "BEDWARS": "Bedwars",
         "PIT": "The Pit",
         "HOUSING": "Housing",
+        "TNTGAMES": "TNT Games"
     }
 
     if game in games_dict:
@@ -48,10 +52,6 @@ def get_player(player):
 
     secondsOnline = time.time()-lastLogin
 
-    # if secondsOnline < 3600:
-    #     return ["Online", f"{round(secondsOnline/60)} minutes"]
-    # else:
-    #     return ["Online", f"{round(secondsOnline/3600)} hours"]
 
     hours = math.floor(secondsOnline/3600)
     mins = math.floor((secondsOnline%3600)/60)
