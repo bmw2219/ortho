@@ -218,7 +218,7 @@ def updatePlaytimes():
             pass
 
 
-        if thing[0]=="Online":
+        if thing[0] == "Online":
             ze_data[uuid] += 1
 
     with open(f"stat_files/playtimes/{date_}.json", "w") as file:

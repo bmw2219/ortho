@@ -19,14 +19,12 @@ intents = discord.Intents.default()
 intents.members = True
 client = commands.Bot(command_prefix='!', intents=intents)
 
+
 @client.event
 async def on_ready():
     print('Bot is ready')
     doStuff.start()
 
-async def saveAllStats():
-    hypixel.saveAllStats()
-# schedule.every().day.at("23:59").do(saveAllStats)
 
 @tasks.loop(minutes=1)
 async def doStuff():
@@ -50,10 +48,38 @@ async def registered(ctx):
 
         await ctx.send(msg)
 
+
 @client.command(pass_context=True)
 async def megabran(ctx):
     # await ctx.send(file=discord.File("resources/megabran.jpg"))
     await ctx.send("no")
+
+
+@client.command(pass_context=True)
+async def quote(ctx):
+    names = ctx.message.content.split()[1:]
+    placeholders = ["{A}", "{B}", "{C}", "{D}", "{E}", "{F}"]
+    with open("quotes.json", encoding="utf8") as json_file:
+        quote_list = json.load(json_file)["quotes"][len(names)-1]
+
+    header = "**ScatterPatter's Incorrect Quotes Generator**\n\n"
+    quote = quote_list[random.randint(0, len(quote_list)-1)]
+    quote = quote.replace("<br>", "\n")
+    quote = quote.replace("*", "\\*")
+    quote = quote.replace("<i>", "*")
+    quote = quote.replace("</i>", "*")
+    for i, item in enumerate(placeholders):
+        if quote.count(item) > 0:
+            quote = quote.replace(item, f"{names[i]}")
+    quote = header + quote
+    # embed = discord.Embed(title="ScatterPatter's Incorrect Quotes Generator",
+    #                       url="https://incorrect-quotes-generator.neocities.org/",
+    #                       description=quote)
+    # embed.add_field(name=quote, value="Check out the website :D", inline=True)
+
+    quote += f"\n\nAll quotes taken from: https://incorrect-quotes-generator.neocities.org/"
+    await ctx.send(quote)
+
 
 @client.command(pass_context=True)
 async def register(ctx, ign):
@@ -77,6 +103,7 @@ async def register(ctx, ign):
 
     await ctx.send("User registered.")
 
+
 @client.command(pass_context=True)
 async def boop(ctx, who: discord.User):
     if who is None:
@@ -84,6 +111,7 @@ async def boop(ctx, who: discord.User):
         return
 
     await ctx.send(who.mention+" ***YOU*** have been booped!!!!!!")
+
 
 @client.command(pass_context=True)
 async def bwscore(ctx, ign, equation):
@@ -93,6 +121,7 @@ async def bwscore(ctx, ign, equation):
     op += f"Equation: {equation}\n"
     op += f"{ign}: {score}\n```"
     await ctx.send(op)
+
 
 @client.command(pass_context=True)
 async def mmscore(ctx, ign, equation):
