@@ -1,15 +1,15 @@
 import discord
 from discord.ext import commands, tasks
-import asyncio
 import requests
 import datetime
+import speak
 # import who_on_smp as smp
+import asyncio
 import who_on_hypixel as hypixel
 import who_on_wynn as wynn
 import json
 import random
 import interpreter
-import schedule
 import date_grabber as dates
 from tictactoe import *
 import leaderboards
@@ -54,6 +54,17 @@ async def megabran(ctx):
     # await ctx.send(file=discord.File("resources/megabran.jpg"))
     await ctx.send("no")
 
+@client.command(pass_context=True)
+async def lonely(ctx):
+    words = "hey baby its ortho im here for you smile heart emoji" if len(ctx.message.content.split()) == 1 else ctx.message.content[8:]
+
+    channel = ctx.author.voice.channel
+    vc = await channel.connect()
+    # await ctx.send("im here for u bb <3")
+    vc.play(discord.FFmpegPCMAudio(speak.get_tts(words)))
+    while vc.is_playing():
+        await asyncio.sleep(1)
+    await vc.disconnect()
 
 @client.command(pass_context=True)
 async def quote(ctx):
